@@ -1,0 +1,37 @@
+public class CreateContactOnAccountInsersion {
+    @AuraEnabled
+    public static void createContact(Id accountId, String activationSummary,Boolean activeAccount) {
+        System.debug('accountId--'+accountId);
+        System.debug('activationSummary--'+activationSummary);
+        Account account = [SELECT Id, Type, Name,Phone,Active__c, (SELECT Id FROM Contacts) FROM Account WHERE Id = :accountId];
+        account.Account_Activation_Summary__c = activationSummary;
+        account.Active__c = activeAccount;
+        update account;
+        System.debug('account--'+account);
+        if (account.Type == 'Customer' && account.Active__c) {
+            System.debug('Inside if--');
+            if (account.Contacts.isEmpty()) {
+                System.debug('Inside nested if--');
+                Contact defaultContact = new Contact();
+                defaultContact.Firstname = account.Name;
+                defaultContact.LastName = 'Customer Representative';
+                defaultContact.Phone = account.Phone;
+                defaultContact.Email = account.Comment__c;
+                defaultContact.AccountId = accountId;                  
+                insert defaultContact;
+                System.debug('defaultContact--'+defaultContact);
+            } else {
+                Contact defaultContact = account.Contacts[0];
+                defaultContact.FirstName = account.Name;
+                defaultContact.LastName = 'Customer Representative';
+                defaultContact.Phone = account.Phone;
+                defaultContact.Email = account.Company_Email__c;
+                defaultContact.AccountId = accountId; 
+                update defaultContact;
+                System.debug(' updated defaultContact--'+defaultContact);
+                
+            }
+        }
+        
+    }
+}
